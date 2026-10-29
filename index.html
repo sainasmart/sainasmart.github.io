@@ -80,7 +80,11 @@ footer p{font-size:13px;line-height:1.7;color:#d4e4dc}
 .detail-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
 .detail-actions button{flex:1;min-width:150px}
 .backbtn{background:#eef3ef;border:1px solid #dce5df;border-radius:8px;padding:10px 14px;font-weight:bold;margin-bottom:16px}
-.admin-fab{position:fixed;right:12px;bottom:12px;z-index:9;background:#164c35;color:#fff;border:0;border-radius:30px;padding:10px 14px;font-size:12px;opacity:.78}
+.admin-fab{display:none;position:fixed;right:12px;bottom:12px;z-index:9;background:#164c35;color:#fff;border:0;border-radius:30px;padding:10px 14px;font-size:12px;opacity:.78}
+.admin-fab.admin-visible{display:block}
+.source-link-row{display:flex;gap:8px;align-items:stretch}
+.source-link-row input{flex:1;min-width:0}
+.source-link-row button{white-space:nowrap}
 .admin-list-row{display:grid;grid-template-columns:58px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #eee}
 .admin-list-row img{width:58px;height:58px;object-fit:cover;border-radius:8px;background:#eee}
 .admin-list-row button{margin:2px}
@@ -166,6 +170,7 @@ footer p{font-size:13px;line-height:1.7;color:#d4e4dc}
       <div class="field"><label>Stock / Short note</label><input id="apNote" maxlength="160"></div>
     </div>
     <div class="field"><label>Product Description</label><textarea id="apDescription" maxlength="1500"></textarea></div>
+    <div class="field"><label>Meesho Product URL (ഐച്ഛികം)</label><div class="source-link-row"><input id="apSourceUrl" type="url" placeholder="https://www.meesho.com/..." inputmode="url"><button type="button" class="backbtn" onclick="openMeeshoSource()">Meesho തുറക്കുക</button></div><small class="muted">ലിങ്ക് ഇവിടെ സേവ് ചെയ്യാം. Meesho-യിൽനിന്ന് പേര്, വില, ചിത്രങ്ങൾ സ്വയം കൊണ്ടുവരാൻ അനുവദനീയമായ API/ഡാറ്റാ സേവനം ആവശ്യമാണ്; ഈ ലിങ്ക് മാത്രം ഉപയോഗിച്ച് അത് ഉറപ്പാക്കാനാവില്ല. ലഭിച്ച വിവരങ്ങൾ താഴെയുള്ള ഫീൽഡുകളിൽ കൈകൊണ്ട് തിരുത്താം.</small></div>
     <div class="field"><label>Image URLs (ഓരോ വരിയിലും ഒരു URL; 4–5 ചിത്രങ്ങൾ നൽകാം)</label><textarea id="apImages" placeholder="https://...&#10;https://..."></textarea></div>
     <div class="field"><label>അല്ലെങ്കിൽ ചിത്രം തിരഞ്ഞെടുക്കുക (Cloudinary സജ്ജമാക്കിയാൽ)</label><input id="apImageFiles" type="file" accept="image/*" multiple></div>
     <button class="primary" id="saveProductBtn" onclick="saveProduct()">Save Product</button>
@@ -314,6 +319,17 @@ function goCheckout(){
 function orderLines(){return products.filter(p=>cart[p.id]).map(p=>`${p.name} (ID ${p.id}) x ${cart[p.id]} = ${money(p.price*cart[p.id])}`).join("\n");}
 
 function openAdmin(){document.getElementById("adminModal").classList.add("show");if(auth&&auth.currentUser&&auth.currentUser.uid===ADMIN_UID)showAdminWorkspace();else showAdminLogin();}
+function openMeeshoSource(){
+  const input=document.getElementById("apSourceUrl");
+  const url=(input.value||"").trim();
+  if(!/^https:\/\/(www\.)?meesho\.com\//i.test(url)){alert("ആദ്യം ശരിയായ Meesho product link നൽകുക.");return;}
+  window.open(url,"_blank","noopener,noreferrer");
+}
+// Admin button is hidden on the normal public storefront. Add ?manage=1 to the site URL to reveal it.
+function configureAdminButton(){
+  const btn=document.querySelector(".admin-fab");
+  if(btn && new URLSearchParams(window.location.search).get("manage")==="1") btn.classList.add("admin-visible");
+}
 function showAdminLogin(){document.getElementById("adminLogin").style.display="block";document.getElementById("adminWorkspace").style.display="none";}
 function showAdminWorkspace(){document.getElementById("adminLogin").style.display="none";document.getElementById("adminWorkspace").style.display="block";renderAdminList();}
 async function adminLogin(){
@@ -328,7 +344,7 @@ async function adminLogin(){
 async function adminLogout(){if(auth)await auth.signOut();showAdminLogin();document.getElementById("adminModal").classList.remove("show");}
 function resetProductForm(){
   editingProductId=null;
-  ["apName","apCategory","apPrice","apOld","apTag","apNote","apDescription","apImages","apImageFiles"].forEach(id=>document.getElementById(id).value="");
+  ["apName","apCategory","apPrice","apOld","apTag","apNote","apDescription","apSourceUrl","apImages","apImageFiles"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("saveProductBtn").textContent="Save Product";
 }
 async function uploadCloudinaryFiles(files){
@@ -356,7 +372,9 @@ async function saveProduct(){
     }
     if(imgs.length>5)imgs=imgs.slice(0,5);
     const id=editingProductId||String(Date.now());
-    const data={id,name,category,price,old,tag:document.getElementById("apTag").value.trim()||"Featured",note:document.getElementById("apNote").value.trim(),description:document.getElementById("apDescription").value.trim(),images:imgs,image:imgs[0]||"",updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    const sourceUrl=document.getElementById("apSourceUrl").value.trim();
+    if(sourceUrl && !/^https:\/\/(www\.)?meesho\.com\//i.test(sourceUrl)) throw new Error("Meesho Product URL ആയി ശരിയായ https://www.meesho.com/ ലിങ്ക് നൽകുക.");
+    const data={id,name,category,price,old,tag:document.getElementById("apTag").value.trim()||"Featured",note:document.getElementById("apNote").value.trim(),description:document.getElementById("apDescription").value.trim(),sourceUrl,images:imgs,image:imgs[0]||"",updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
     await db.collection("products").doc(String(id)).set(data,{merge:true});
     await loadCloudProducts();resetProductForm();renderAdminList();alert("Product save ചെയ്തു.");
   }catch(e){alert("Save ചെയ്യാൻ കഴിഞ്ഞില്ല: "+e.message);}
@@ -374,6 +392,7 @@ function editProduct(id){
   document.getElementById("apPrice").value=p.price??"";document.getElementById("apOld").value=p.old||"";
   document.getElementById("apTag").value=p.tag||"";document.getElementById("apNote").value=p.note||"";
   document.getElementById("apDescription").value=p.description||"";
+  document.getElementById("apSourceUrl").value=p.sourceUrl||"";
   document.getElementById("apImages").value=productImages(p).join("\n");
   document.getElementById("saveProductBtn").textContent="Update Product";
   document.getElementById("adminWorkspace").scrollIntoView({behavior:"smooth"});
@@ -420,7 +439,7 @@ document.getElementById("checkoutForm").addEventListener("submit",function(e){
 });
 document.getElementById("searchInput").addEventListener("input",renderProducts);
 document.getElementById("year").textContent=new Date().getFullYear();
-renderCategories();renderProducts();updateCart();
+renderCategories();renderProducts();updateCart();configureAdminButton();
 </script>
 </body>
 </html>
