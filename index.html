@@ -86,6 +86,7 @@ footer p{font-size:13px;line-height:1.7;color:#d4e4dc}
 .source-link-row input{flex:1;min-width:0}
 .source-link-row button{white-space:nowrap}
 .platform-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0 18px}
+.size-options{display:flex;flex-wrap:wrap;gap:8px}.size-chip{display:inline-flex;align-items:center;gap:5px;background:#f3f7f4;border:1px solid #d5e4da;border-radius:8px;padding:8px 10px;font-size:13px}.size-select{width:100%;padding:11px;border:1px solid var(--border);border-radius:8px;background:#fff}
 .platform-shortcuts a{display:flex;align-items:center;justify-content:center;text-align:center;text-decoration:none;background:#eef6f0;color:#164c35;border:1px solid #d6e8dc;border-radius:9px;padding:11px 8px;font-weight:bold;font-size:13px}
 .platform-shortcuts a:hover{background:#d9eee0}
 @media(max-width:520px){.platform-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -189,6 +190,7 @@ footer p{font-size:13px;line-height:1.7;color:#d4e4dc}
         <option>Toys & Games</option><option>Books & Stationery</option><option>Sports & Fitness</option><option>Pet Supplies</option>
         <option>Automotive Accessories</option><option>Office Supplies</option><option>Other</option>
       </select></div>
+      <div class="field" id="apSizeField" style="display:none"><label id="apSizeLabel">Available Sizes</label><div id="apSizeOptions" class="size-options"></div><small class="muted">ഉൽപ്പന്നത്തിന് ലഭ്യമായ സൈസുകൾ തിരഞ്ഞെടുക്കുക.</small></div>
       <div class="field"><label>Price (₹) *</label><input id="apPrice" type="number" min="0" step="1"></div>
       <div class="field"><label>Old Price (₹)</label><input id="apOld" type="number" min="0" step="1"></div>
       <div class="field"><label>Tag</label><input id="apTag" maxlength="40" placeholder="Popular"></div>
@@ -209,6 +211,7 @@ footer p{font-size:13px;line-height:1.7;color:#d4e4dc}
 <script>
 /* SHOP SETTINGS: change the WhatsApp number here later if needed.
    Use country code + number, digits only, without + or spaces. */
+const selectedSizes = {};
 const SHOP = {
   whatsapp: "916235830017",
   upiId: "", // നിങ്ങളുടെ യഥാർത്ഥ UPI ID ചേർത്താൽ മാത്രം UPI ഓപ്ഷൻ പ്രവർത്തിക്കും
@@ -298,6 +301,7 @@ function openProduct(id){
       <div><span class="tag">${safeText(p.tag||"Featured")}</span><h2>${safeText(p.name)}</h2>
       <div class="price">${money(p.price)} ${p.old?`<span class="oldprice">${money(p.old)}</span>`:""}</div>
       <p class="muted">Category: ${safeText(p.category||"General")}</p>
+      ${Array.isArray(p.sizes)&&p.sizes.length?`<div class="field"><label for="detailSize">Select Size *</label><select id="detailSize" class="size-select"><option value="">Choose size</option>${p.sizes.map(sz=>`<option value="${safeText(sz)}">${safeText(sz)}</option>`).join("")}</select></div>`:""}
       <p style="line-height:1.7;white-space:pre-wrap">${safeText(p.description||p.note||"Product details available on request.")}</p>
       <div class="field"><label>Quantity</label><input id="detailQty" type="number" min="1" max="99" value="1"></div>
       <div class="detail-actions"><button class="add" onclick="addDetailToCart()">Add to Cart</button><button class="wa" onclick="orderSingle(${Number(p.id)})">Order on WhatsApp</button></div>
@@ -308,11 +312,17 @@ function openProduct(id){
 function selectDetailImage(el,url){document.getElementById("detailMainImage").src=url;document.querySelectorAll(".detail-thumbs img").forEach(i=>i.classList.remove("selected"));el.classList.add("selected");}
 function addDetailToCart(){
   const p=products.find(item=>String(item.id)===String(detailProductId));if(!p)return;
+  const sizeEl=document.getElementById("detailSize"),size=sizeEl?sizeEl.value:"";
+  if(sizeEl&&!size){alert("ദയവായി സൈസ് തിരഞ്ഞെടുക്കുക.");return;}
   const qty=Math.max(1,Math.min(99,parseInt(document.getElementById("detailQty").value,10)||1));
+  if(size)selectedSizes[p.id]=size;
   cart[p.id]=(cart[p.id]||0)+qty;updateCart();closeModal("detailModal");alert("Cart-ലേക്ക് ചേർത്തു.");
 }
 function orderSingle(id){
   const p=products.find(item=>String(item.id)===String(id));if(!p)return;
+  const sizeEl=document.getElementById("detailSize"),size=sizeEl?sizeEl.value:"";
+  if(sizeEl&&!size){alert("ദയവായി സൈസ് തിരഞ്ഞെടുക്കുക.");return;}
+  if(size)selectedSizes[p.id]=size;
   cart={};cart[p.id]=Math.max(1,Math.min(99,parseInt(document.getElementById("detailQty")?.value||"1",10)||1));
   updateCart();closeModal("detailModal");document.getElementById("checkoutModal").classList.add("show");
 }
@@ -340,7 +350,7 @@ function goCheckout(){
   if(!Object.keys(cart).length){alert("Please add a product to your cart first.");return;}
   closeModal("cartModal");document.getElementById("checkoutModal").classList.add("show");
 }
-function orderLines(){return products.filter(p=>cart[p.id]).map(p=>`${p.name} (ID ${p.id}) x ${cart[p.id]} = ${money(p.price*cart[p.id])}`).join("\n");}
+function orderLines(){return products.filter(p=>cart[p.id]).map(p=>`${p.name} (ID ${p.id})${selectedSizes[p.id]?` | Size: ${selectedSizes[p.id]}`:""} x ${cart[p.id]} = ${money(p.price*cart[p.id])}`).join("\n");}
 
 function openAdmin(){document.getElementById("adminModal").classList.add("show");if(auth&&auth.currentUser&&auth.currentUser.uid===ADMIN_UID)showAdminWorkspace();else showAdminLogin();}
 // Admin button is hidden on the normal public storefront. Add ?manage=1 to the site URL to reveal it.
@@ -364,6 +374,7 @@ function resetProductForm(){
   editingProductId=null;
   ["apName","apCategory","apPrice","apOld","apTag","apNote","apDescription","apImages","apImageFiles"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("saveProductBtn").textContent="Save Product";
+  renderAdminSizeOptions();
 }
 async function uploadCloudinaryFiles(files){
   const urls=[];
@@ -374,6 +385,23 @@ async function uploadCloudinaryFiles(files){
   }
   return urls;
 }
+function sizeTypeForCategory(category){
+  const c=(category||"").toLowerCase();
+  if(/footwear|shoe|sandal|slipper/.test(c))return "footwear";
+  if(/clothing|fashion|dress|apparel/.test(c))return "clothing";
+  if(/kids|baby|toy/.test(c))return "kids";
+  return "none";
+}
+function renderAdminSizeOptions(existing=[]){
+  const category=document.getElementById("apCategory").value;
+  const type=sizeTypeForCategory(category),field=document.getElementById("apSizeField"),wrap=document.getElementById("apSizeOptions"),label=document.getElementById("apSizeLabel");
+  if(type==="none"){field.style.display="none";wrap.innerHTML="";return;}
+  field.style.display="block";
+  const options=type==="clothing"?["XS","S","M","L","XL","XXL","XXXL","4XL","5XL","6XL"]:type==="footwear"?["UK 3","UK 4","UK 5","UK 6","UK 7","UK 8","UK 9","UK 10","UK 11","UK 12","EU 36","EU 37","EU 38","EU 39","EU 40","EU 41","EU 42","EU 43","EU 44","EU 45","EU 46"]:["0–3 months","3–6 months","6–12 months","1–2 years","2–3 years","3–4 years","4–5 years","5–6 years","6–7 years","7–8 years","8–9 years","9–10 years"];
+  label.textContent=type==="clothing"?"Available Clothing Sizes":type==="footwear"?"Available Shoe / Footwear Sizes":"Available Kids Sizes";
+  wrap.innerHTML=options.map((v,i)=>`<label class="size-chip"><input type="checkbox" value="${v}" ${existing.includes(v)?"checked":""}> ${v}</label>`).join("");
+}
+document.getElementById("apCategory").addEventListener("change",()=>renderAdminSizeOptions());
 async function saveProduct(){
   if(!auth?.currentUser||auth.currentUser.uid!==ADMIN_UID){alert("ആദ്യം അഡ്മിൻ ആയി login ചെയ്യുക.");return;}
   if(!db){alert("Firebase config ചേർത്തിട്ടില്ല.");return;}
@@ -390,7 +418,8 @@ async function saveProduct(){
     }
     if(imgs.length>5)imgs=imgs.slice(0,5);
     const id=editingProductId||String(Date.now());
-    const data={id,name,category,price,old,tag:document.getElementById("apTag").value.trim()||"Featured",note:document.getElementById("apNote").value.trim(),description:document.getElementById("apDescription").value.trim(),sourceUrl:"",images:imgs,image:imgs[0]||"",updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    const sizes=Array.from(document.querySelectorAll("#apSizeOptions input[type=checkbox]:checked")).map(el=>el.value);
+    const data={id,name,category,price,old,tag:document.getElementById("apTag").value.trim()||"Featured",note:document.getElementById("apNote").value.trim(),description:document.getElementById("apDescription").value.trim(),sizes,sourceUrl:"",images:imgs,image:imgs[0]||"",updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
     await db.collection("products").doc(String(id)).set(data,{merge:true});
     await loadCloudProducts();resetProductForm();renderAdminList();alert("Product save ചെയ്തു.");
   }catch(e){alert("Save ചെയ്യാൻ കഴിഞ്ഞില്ല: "+e.message);}
@@ -427,6 +456,7 @@ function editProduct(id){
   const categorySelect=document.getElementById("apCategory");
   if(p.category && !Array.from(categorySelect.options).some(o=>o.value===p.category)){const opt=document.createElement("option");opt.value=p.category;opt.textContent=p.category;categorySelect.appendChild(opt);}
   categorySelect.value=p.category||"";
+  renderAdminSizeOptions(Array.isArray(p.sizes)?p.sizes:[]);
   document.getElementById("apPrice").value=p.price??"";document.getElementById("apOld").value=p.old||"";
   document.getElementById("apTag").value=p.tag||"";document.getElementById("apNote").value=p.note||"";
   document.getElementById("apDescription").value=p.description||"";
