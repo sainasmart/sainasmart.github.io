@@ -85,6 +85,10 @@ footer p{font-size:13px;line-height:1.7;color:#d4e4dc}
 .source-link-row{display:flex;gap:8px;align-items:stretch}
 .source-link-row input{flex:1;min-width:0}
 .source-link-row button{white-space:nowrap}
+.platform-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0 18px}
+.platform-shortcuts a{display:flex;align-items:center;justify-content:center;text-align:center;text-decoration:none;background:#eef6f0;color:#164c35;border:1px solid #d6e8dc;border-radius:9px;padding:11px 8px;font-weight:bold;font-size:13px}
+.platform-shortcuts a:hover{background:#d9eee0}
+@media(max-width:520px){.platform-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .admin-list-row{display:grid;grid-template-columns:58px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #eee}
 .admin-list-row img{width:58px;height:58px;object-fit:cover;border-radius:8px;background:#eee}
 .admin-list-row button{margin:2px}
@@ -161,16 +165,36 @@ footer p{font-size:13px;line-height:1.7;color:#d4e4dc}
   </div>
   <div id="adminWorkspace" style="display:none">
     <p class="notice">പുതിയ ഉൽപ്പന്നങ്ങൾ, വില, വിഭാഗം, വിവരണം, ചിത്രങ്ങളുടെ URL എന്നിവ ഇവിടെ നിയന്ത്രിക്കാം. ചിത്രങ്ങൾക്ക് Cloudinary സൗജന്യ അക്കൗണ്ടിലെ Unsigned Upload Preset ക്രമീകരിക്കണം.</p>
+    <div class="field"><label>ഓൺലൈൻ ഷോപ്പിംഗ് പ്ലാറ്റ്ഫോമുകൾ — വിലയും ഉൽപ്പന്ന വിവരങ്ങളും പരിശോധിക്കാൻ</label>
+      <div class="platform-shortcuts">
+        <a href="https://www.meesho.com/" target="_blank" rel="noopener noreferrer">Meesho</a>
+        <a href="https://www.amazon.in/" target="_blank" rel="noopener noreferrer">Amazon</a>
+        <a href="https://www.myntra.com/" target="_blank" rel="noopener noreferrer">Myntra</a>
+        <a href="https://www.flipkart.com/" target="_blank" rel="noopener noreferrer">Flipkart</a>
+        <a href="https://www.shopsy.in/" target="_blank" rel="noopener noreferrer">Shopsy</a>
+        <a href="https://shescale.in/" target="_blank" rel="noopener noreferrer">SheScale</a>
+        <a href="https://dropsetu.com/" target="_blank" rel="noopener noreferrer">DropSetu</a>
+      </div>
+      <small class="muted">ഈ ബട്ടണുകൾ ബന്ധപ്പെട്ട വെബ്സൈറ്റുകൾ നേരിട്ട് തുറക്കാനുള്ള കുറുക്കുവഴികൾ മാത്രമാണ്.</small>
+    </div>
     <div class="admin-form-grid">
       <div class="field"><label>Product Name *</label><input id="apName" maxlength="120"></div>
-      <div class="field"><label>Category *</label><input id="apCategory" maxlength="60" placeholder="Fashion, Beauty..."></div>
+      <div class="field"><label>Category *</label><select id="apCategory">
+        <option value="">കാറ്റഗറി തിരഞ്ഞെടുക്കുക</option>
+        <option>Fashion</option><option>Clothing</option><option>Footwear</option><option>Bags & Luggage</option>
+        <option>Jewellery & Accessories</option><option>Watches</option><option>Beauty</option><option>Personal Care</option>
+        <option>Health & Wellness</option><option>Electronics</option><option>Mobiles & Accessories</option><option>Computers & Accessories</option>
+        <option>Home & Kitchen</option><option>Home Decor</option><option>Furniture</option><option>Kitchen Appliances</option>
+        <option>Large Appliances</option><option>Grocery</option><option>Food & Beverages</option><option>Kids & Baby</option>
+        <option>Toys & Games</option><option>Books & Stationery</option><option>Sports & Fitness</option><option>Pet Supplies</option>
+        <option>Automotive Accessories</option><option>Office Supplies</option><option>Other</option>
+      </select></div>
       <div class="field"><label>Price (₹) *</label><input id="apPrice" type="number" min="0" step="1"></div>
       <div class="field"><label>Old Price (₹)</label><input id="apOld" type="number" min="0" step="1"></div>
       <div class="field"><label>Tag</label><input id="apTag" maxlength="40" placeholder="Popular"></div>
       <div class="field"><label>Stock / Short note</label><input id="apNote" maxlength="160"></div>
     </div>
     <div class="field"><label>Product Description</label><textarea id="apDescription" maxlength="1500"></textarea></div>
-    <div class="field"><label>Meesho Product URL (ഐച്ഛികം)</label><div class="source-link-row"><input id="apSourceUrl" type="url" placeholder="https://www.meesho.com/..." inputmode="url"><button type="button" class="backbtn" onclick="openMeeshoSource()">Meesho തുറക്കുക</button></div><small class="muted">ലിങ്ക് ഇവിടെ സേവ് ചെയ്യാം. Meesho-യിൽനിന്ന് പേര്, വില, ചിത്രങ്ങൾ സ്വയം കൊണ്ടുവരാൻ അനുവദനീയമായ API/ഡാറ്റാ സേവനം ആവശ്യമാണ്; ഈ ലിങ്ക് മാത്രം ഉപയോഗിച്ച് അത് ഉറപ്പാക്കാനാവില്ല. ലഭിച്ച വിവരങ്ങൾ താഴെയുള്ള ഫീൽഡുകളിൽ കൈകൊണ്ട് തിരുത്താം.</small></div>
     <div class="field"><label>Image URLs (ഓരോ വരിയിലും ഒരു URL; 4–5 ചിത്രങ്ങൾ നൽകാം)</label><textarea id="apImages" placeholder="https://...&#10;https://..."></textarea></div>
     <div class="field"><label>അല്ലെങ്കിൽ ചിത്രം തിരഞ്ഞെടുക്കുക (Cloudinary സജ്ജമാക്കിയാൽ)</label><input id="apImageFiles" type="file" accept="image/*" multiple></div>
     <button class="primary" id="saveProductBtn" onclick="saveProduct()">Save Product</button>
@@ -319,12 +343,6 @@ function goCheckout(){
 function orderLines(){return products.filter(p=>cart[p.id]).map(p=>`${p.name} (ID ${p.id}) x ${cart[p.id]} = ${money(p.price*cart[p.id])}`).join("\n");}
 
 function openAdmin(){document.getElementById("adminModal").classList.add("show");if(auth&&auth.currentUser&&auth.currentUser.uid===ADMIN_UID)showAdminWorkspace();else showAdminLogin();}
-function openMeeshoSource(){
-  const input=document.getElementById("apSourceUrl");
-  const url=(input.value||"").trim();
-  if(!/^https:\/\/(www\.)?meesho\.com\//i.test(url)){alert("ആദ്യം ശരിയായ Meesho product link നൽകുക.");return;}
-  window.open(url,"_blank","noopener,noreferrer");
-}
 // Admin button is hidden on the normal public storefront. Add ?manage=1 to the site URL to reveal it.
 function configureAdminButton(){
   const btn=document.querySelector(".admin-fab");
@@ -344,7 +362,7 @@ async function adminLogin(){
 async function adminLogout(){if(auth)await auth.signOut();showAdminLogin();document.getElementById("adminModal").classList.remove("show");}
 function resetProductForm(){
   editingProductId=null;
-  ["apName","apCategory","apPrice","apOld","apTag","apNote","apDescription","apSourceUrl","apImages","apImageFiles"].forEach(id=>document.getElementById(id).value="");
+  ["apName","apCategory","apPrice","apOld","apTag","apNote","apDescription","apImages","apImageFiles"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("saveProductBtn").textContent="Save Product";
 }
 async function uploadCloudinaryFiles(files){
@@ -372,27 +390,46 @@ async function saveProduct(){
     }
     if(imgs.length>5)imgs=imgs.slice(0,5);
     const id=editingProductId||String(Date.now());
-    const sourceUrl=document.getElementById("apSourceUrl").value.trim();
-    if(sourceUrl && !/^https:\/\/(www\.)?meesho\.com\//i.test(sourceUrl)) throw new Error("Meesho Product URL ആയി ശരിയായ https://www.meesho.com/ ലിങ്ക് നൽകുക.");
-    const data={id,name,category,price,old,tag:document.getElementById("apTag").value.trim()||"Featured",note:document.getElementById("apNote").value.trim(),description:document.getElementById("apDescription").value.trim(),sourceUrl,images:imgs,image:imgs[0]||"",updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    const data={id,name,category,price,old,tag:document.getElementById("apTag").value.trim()||"Featured",note:document.getElementById("apNote").value.trim(),description:document.getElementById("apDescription").value.trim(),sourceUrl:"",images:imgs,image:imgs[0]||"",updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
     await db.collection("products").doc(String(id)).set(data,{merge:true});
     await loadCloudProducts();resetProductForm();renderAdminList();alert("Product save ചെയ്തു.");
   }catch(e){alert("Save ചെയ്യാൻ കഴിഞ്ഞില്ല: "+e.message);}
   finally{btn.disabled=false;btn.textContent=editingProductId?"Update Product":"Save Product";}
 }
+function makeProductLink(id){
+  const url=new URL(window.location.href);
+  url.searchParams.delete("manage");
+  url.searchParams.set("product",String(id));
+  url.hash="";
+  return url.toString();
+}
+async function copyProductLink(id){
+  if(!auth?.currentUser||auth.currentUser.uid!==ADMIN_UID){alert("ഈ ലിങ്ക് എടുക്കാൻ അഡ്മിൻ ആയി login ചെയ്യണം.");return;}
+  const link=makeProductLink(id);
+  try{
+    if(navigator.clipboard && window.isSecureContext){await navigator.clipboard.writeText(link);alert("Product link copy ചെയ്തു. ഇത് വീഡിയോ/സോഷ്യൽ മീഡിയയിൽ പങ്കിടാം.\n\n"+link);}
+    else {window.prompt("Product link copy ചെയ്യുക:",link);}
+  }catch(e){window.prompt("Product link copy ചെയ്യുക:",link);}
+}
+function openProductFromUrl(){
+  const id=new URLSearchParams(window.location.search).get("product");
+  if(id && products.some(p=>String(p.id)===String(id))) openProduct(id);
+}
 function renderAdminList(){
   const list=document.getElementById("adminProductList");
   document.getElementById("adminProductCount").textContent=products.length;
-  list.innerHTML=products.map(p=>`<div class="admin-list-row"><img src="${safeText(productImages(p)[0]||"")}" alt=""><div><strong>${safeText(p.name)}</strong><br><span class="muted">${money(p.price)} · ${safeText(p.category)}</span></div><div><button class="backbtn" onclick="editProduct('${String(p.id).replace(/'/g,"")}')">Edit</button><button class="remove" onclick="deleteProduct('${String(p.id).replace(/'/g,"")}')">Delete</button></div></div>`).join("");
+  list.innerHTML=products.map(p=>`<div class="admin-list-row"><img src="${safeText(productImages(p)[0]||"")}" alt=""><div><strong>${safeText(p.name)}</strong><br><span class="muted">${money(p.price)} · ${safeText(p.category)}</span></div><div><button class="backbtn" onclick="editProduct('${String(p.id).replace(/'/g,"")}')">Edit</button><button class="primary" onclick="copyProductLink('${String(p.id).replace(/'/g,"")}')">Copy Product Link</button><button class="remove" onclick="deleteProduct('${String(p.id).replace(/'/g,"")}')">Delete</button></div></div>`).join("");
 }
 function editProduct(id){
   const p=products.find(x=>String(x.id)===String(id));if(!p)return;
   editingProductId=String(p.id);
-  document.getElementById("apName").value=p.name||"";document.getElementById("apCategory").value=p.category||"";
+  document.getElementById("apName").value=p.name||"";
+  const categorySelect=document.getElementById("apCategory");
+  if(p.category && !Array.from(categorySelect.options).some(o=>o.value===p.category)){const opt=document.createElement("option");opt.value=p.category;opt.textContent=p.category;categorySelect.appendChild(opt);}
+  categorySelect.value=p.category||"";
   document.getElementById("apPrice").value=p.price??"";document.getElementById("apOld").value=p.old||"";
   document.getElementById("apTag").value=p.tag||"";document.getElementById("apNote").value=p.note||"";
   document.getElementById("apDescription").value=p.description||"";
-  document.getElementById("apSourceUrl").value=p.sourceUrl||"";
   document.getElementById("apImages").value=productImages(p).join("\n");
   document.getElementById("saveProductBtn").textContent="Update Product";
   document.getElementById("adminWorkspace").scrollIntoView({behavior:"smooth"});
@@ -411,8 +448,8 @@ async function loadCloudProducts(){
       const remote=snap.docs.map(doc=>{const d=doc.data();return {...d,id:d.id??doc.id,image:d.image||(d.images||[])[0]||""};});
       products.splice(0,products.length,...remote);
       if(!products.length)activeCategory="All";
-      renderCategories();renderProducts();updateCart();
-    }
+      renderCategories();renderProducts();updateCart();openProductFromUrl();
+    } else { openProductFromUrl(); }
   }catch(e){console.warn("Products cloud load failed:",e.message);}
 }
 if(cloudReady){
@@ -439,7 +476,7 @@ document.getElementById("checkoutForm").addEventListener("submit",function(e){
 });
 document.getElementById("searchInput").addEventListener("input",renderProducts);
 document.getElementById("year").textContent=new Date().getFullYear();
-renderCategories();renderProducts();updateCart();configureAdminButton();
+renderCategories();renderProducts();updateCart();configureAdminButton();if(!cloudReady)openProductFromUrl();
 </script>
 </body>
 </html>
