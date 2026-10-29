@@ -68,6 +68,25 @@ footer p{font-size:13px;line-height:1.7;color:#d4e4dc}
 @media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.hero{padding:22px}.hero img{width:38%}.benefits{grid-template-columns:1fr}}
 @media(max-width:430px){header{gap:10px}.logo{font-size:22px}.search{order:3;flex-basis:100%}.hero{padding:18px}.hero img{width:34%}.hero p{font-size:13px}.grid{gap:8px}.product h3{font-size:13px}.price{font-size:17px}main{padding:16px 3%}.productbody{padding:9px}}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+.detail-layout{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.detail-main{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:#eee}
+.detail-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.detail-thumbs img{width:70px;height:70px;object-fit:cover;border-radius:8px;border:2px solid transparent;cursor:pointer}
+.detail-thumbs img.selected{border-color:var(--green)}
+.detail-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+.detail-actions button{flex:1;min-width:150px}
+.backbtn{background:#eef3ef;border:1px solid #dce5df;border-radius:8px;padding:10px 14px;font-weight:bold;margin-bottom:16px}
+.admin-fab{position:fixed;right:12px;bottom:12px;z-index:9;background:#164c35;color:#fff;border:0;border-radius:30px;padding:10px 14px;font-size:12px;opacity:.78}
+.admin-list-row{display:grid;grid-template-columns:58px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #eee}
+.admin-list-row img{width:58px;height:58px;object-fit:cover;border-radius:8px;background:#eee}
+.admin-list-row button{margin:2px}
+.admin-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:650px){.detail-layout{grid-template-columns:1fr}.admin-form-grid{grid-template-columns:1fr}.detail-main{max-height:380px}}
+</style>
 </head>
 <body>
 <div class="topbar">Welcome to Sainas Mart · Happy Shopping!</div>
@@ -122,25 +141,89 @@ footer p{font-size:13px;line-height:1.7;color:#d4e4dc}
   </form>
 </div></div>
 
+<div class="modal" id="detailModal"><div class="panel">
+  <button class="backbtn" onclick="closeModal('detailModal')">← Back to Products</button>
+  <div id="detailContent"></div>
+</div></div>
+
+<div class="modal" id="adminModal"><div class="panel" style="max-width:850px">
+  <div class="panelhead"><h2>Admin Panel</h2><button class="close" onclick="closeModal('adminModal')">×</button></div>
+  <div id="adminLogin">
+    <p class="muted">അധികൃത അഡ്മിൻ അക്കൗണ്ട് ഉപയോഗിച്ച് മാത്രം പ്രവേശിക്കുക.</p>
+    <div class="field"><label for="adminEmail">Admin Email</label><input id="adminEmail" type="email" autocomplete="username"></div>
+    <div class="field"><label for="adminPassword">Password</label><input id="adminPassword" type="password" autocomplete="current-password"></div>
+    <button class="primary" onclick="adminLogin()">Login</button>
+    <p id="adminLoginMessage" class="muted"></p>
+  </div>
+  <div id="adminWorkspace" style="display:none">
+    <p class="notice">പുതിയ ഉൽപ്പന്നങ്ങൾ, വില, വിഭാഗം, വിവരണം, ചിത്രങ്ങളുടെ URL എന്നിവ ഇവിടെ നിയന്ത്രിക്കാം. ചിത്രങ്ങൾക്ക് Cloudinary സൗജന്യ അക്കൗണ്ടിലെ Unsigned Upload Preset ക്രമീകരിക്കണം.</p>
+    <div class="admin-form-grid">
+      <div class="field"><label>Product Name *</label><input id="apName" maxlength="120"></div>
+      <div class="field"><label>Category *</label><input id="apCategory" maxlength="60" placeholder="Fashion, Beauty..."></div>
+      <div class="field"><label>Price (₹) *</label><input id="apPrice" type="number" min="0" step="1"></div>
+      <div class="field"><label>Old Price (₹)</label><input id="apOld" type="number" min="0" step="1"></div>
+      <div class="field"><label>Tag</label><input id="apTag" maxlength="40" placeholder="Popular"></div>
+      <div class="field"><label>Stock / Short note</label><input id="apNote" maxlength="160"></div>
+    </div>
+    <div class="field"><label>Product Description</label><textarea id="apDescription" maxlength="1500"></textarea></div>
+    <div class="field"><label>Image URLs (ഓരോ വരിയിലും ഒരു URL; 4–5 ചിത്രങ്ങൾ നൽകാം)</label><textarea id="apImages" placeholder="https://...&#10;https://..."></textarea></div>
+    <div class="field"><label>അല്ലെങ്കിൽ ചിത്രം തിരഞ്ഞെടുക്കുക (Cloudinary സജ്ജമാക്കിയാൽ)</label><input id="apImageFiles" type="file" accept="image/*" multiple></div>
+    <button class="primary" id="saveProductBtn" onclick="saveProduct()">Save Product</button>
+    <button class="backbtn" onclick="resetProductForm()">Clear Form</button>
+    <h3>Products (<span id="adminProductCount">0</span>)</h3>
+    <div id="adminProductList"></div>
+    <button class="backbtn" onclick="adminLogout()">Logout</button>
+  </div>
+</div></div>
+<button class="admin-fab" onclick="openAdmin()">Admin</button>
+
 <script>
 /* SHOP SETTINGS: change the WhatsApp number here later if needed.
    Use country code + number, digits only, without + or spaces. */
 const SHOP = {
   whatsapp: "916235830017",
-  upiId: "", // Add your real UPI ID later, e.g. yourname@bank
+  upiId: "", // നിങ്ങളുടെ യഥാർത്ഥ UPI ID ചേർത്താൽ മാത്രം UPI ഓപ്ഷൻ പ്രവർത്തിക്കും
   shopName: "Sainas Mart"
 };
 
+/* IMPORTANT: Firebase Console > Project settings > Your apps എന്നിടത്തെ config ഇവിടെ ചേർക്കുക.
+   ഈ ഫയലിൽ password ചേർക്കരുത്. Admin password Firebase Authentication-ലാണ് സൂക്ഷിക്കേണ്ടത്. */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCVQkgxK5SET7nmIBQLalQeTuxPi7Ezg3I",
+  authDomain: "sainas-mart-admin.firebaseapp.com",
+  projectId: "sainas-mart-admin",
+  storageBucket: "sainas-mart-admin.firebasestorage.app",
+  messagingSenderId: "607690777032",
+  appId: "1:607690777032:web:007ce792ad5ed4368220fd"
+};
+
+/* Optional free image hosting: Cloudinary > Settings > Upload > Add upload preset.
+   Set preset to Unsigned and enter cloud name + preset below. Do not paste a private API secret. */
+const CLOUDINARY_CLOUD_NAME = "PASTE_CLOUD_NAME_HERE";
+const CLOUDINARY_UNSIGNED_PRESET = "PASTE_UNSIGNED_PRESET_HERE";
+const ADMIN_UID = "GcwIBTJHnPd8qfo8LaW2fLCav442"; // നിങ്ങളുടെ Firebase Admin UID
+let db = null, auth = null, editingProductId = null, detailProductId = null;
+let cloudReady = false;
+try {
+  if (FIREBASE_CONFIG.apiKey !== "PASTE_YOUR_API_KEY_HERE" &&
+      FIREBASE_CONFIG.projectId !== "PASTE_YOUR_PROJECT_ID") {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    auth = firebase.auth();
+    db = firebase.firestore();
+    cloudReady = true;
+  }
+} catch (err) { console.warn("Firebase initialization:", err); }
+
 /* DEMO PRODUCTS: replace sample names, prices and images with your real items */
 const products = [
-  {id:1,name:"Everyday Fashion Bag",category:"Fashion",price:499,old:699,tag:"Popular",image:"https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=600&q=80"},
-  {id:2,name:"Classic Wrist Watch",category:"Fashion",price:599,old:899,tag:"Trending",image:"https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=600&q=80"},
-  {id:3,name:"Beauty Care Essentials",category:"Beauty",price:299,old:399,tag:"Featured",image:"https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?auto=format&fit=crop&w=600&q=80"},
-  {id:4,name:"Wireless Headphones",category:"Electronics",price:799,old:1199,tag:"Popular",image:"https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80"},
-  {id:5,name:"Smart Home Speaker",category:"Electronics",price:999,old:1399,tag:"Featured",image:"https://images.unsplash.com/photo-1589003077984-894e133dabab?auto=format&fit=crop&w=600&q=80"},
-  {id:6,name:"Kids Soft Toy",category:"Kids",price:349,old:499,tag:"Kids Favourite",image:"https://images.unsplash.com/photo-1559454403-b8fb88521f11?auto=format&fit=crop&w=600&q=80"},
-  {id:7,name:"Casual Sneakers",category:"Fashion",price:899,old:1299,tag:"Trending",image:"https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80"},
-  {id:8,name:"Daily Use Backpack",category:"Fashion",price:649,old:899,tag:"Popular",image:"https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=600&q=80"}
+  {id:1,name:"Everyday Fashion Bag",category:"Fashion",price:499,old:699,tag:"Popular",image:"https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=600&q=80",images:[],description:"Product details available on request."},
+  {id:2,name:"Classic Wrist Watch",category:"Fashion",price:599,old:899,tag:"Trending",image:"https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=600&q=80",images:[],description:"Product details available on request."},
+  {id:3,name:"Beauty Care Essentials",category:"Beauty",price:299,old:399,tag:"Featured",image:"https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?auto=format&fit=crop&w=600&q=80",images:[],description:"Product details available on request."},
+  {id:4,name:"Wireless Headphones",category:"Electronics",price:799,old:1199,tag:"Popular",image:"https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",images:[],description:"Product details available on request."},
+  {id:5,name:"Smart Home Speaker",category:"Electronics",price:999,old:1399,tag:"Featured",image:"https://images.unsplash.com/photo-1589003077984-894e133dabab?auto=format&fit=crop&w=600&q=80",images:[],description:"Product details available on request."},
+  {id:6,name:"Kids Soft Toy",category:"Kids",price:349,old:499,tag:"Kids Favourite",image:"https://images.unsplash.com/photo-1559454403-b8fb88521f11?auto=format&fit=crop&w=600&q=80",images:[],description:"Product details available on request."},
+  {id:7,name:"Casual Sneakers",category:"Fashion",price:899,old:1299,tag:"Trending",image:"https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80",images:[],description:"Product details available on request."},
+  {id:8,name:"Daily Use Backpack",category:"Fashion",price:649,old:899,tag:"Popular",image:"https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=600&q=80",images:[],description:"Product details available on request."}
 ];
 let cart = {};
 let activeCategory = "All";
@@ -153,6 +236,8 @@ function renderCategories(){
   ).join("");
 }
 function setCategory(c){activeCategory=c;renderCategories();renderProducts();}
+function safeText(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function productImages(p){return (Array.isArray(p.images)&&p.images.length?p.images:[p.image]).filter(Boolean);}
 function renderProducts(){
   const q=document.getElementById("searchInput").value.trim().toLowerCase();
   const filtered=products.filter(p=>(activeCategory==="All"||p.category===activeCategory)&&
@@ -161,23 +246,46 @@ function renderProducts(){
   document.getElementById("resultCount").textContent=filtered.length+" items";
   document.getElementById("productGrid").innerHTML=filtered.length?filtered.map(p=>`
     <article class="product">
-      <img src="${p.image}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'">
+      <img src="${safeText(productImages(p)[0]||"")}" alt="${safeText(p.name)}" loading="lazy" onerror="this.style.display='none'" onclick="openProduct(${Number(p.id)})" style="cursor:pointer">
       <div class="productbody">
-        <span class="tag">${p.tag}</span><h3>${p.name}</h3>
-        <div><span class="price">${money(p.price)}</span><span class="oldprice">${money(p.old)}</span></div>
+        <span class="tag">${safeText(p.tag||"Featured")}</span><h3>${safeText(p.name)}</h3>
+        <div><span class="price">${money(p.price)}</span>${p.old?`<span class="oldprice">${money(p.old)}</span>`:""}</div>
         <div class="actions">
-          <button class="add" onclick="addToCart(${p.id})">＋ Add to Cart</button>
-          <button class="wa" onclick="orderSingle(${p.id})"><span aria-hidden="true">●</span> Order on WhatsApp</button>
+          <button class="add" onclick="openProduct(${Number(p.id)})">View Details</button>
+          <button class="wa" onclick="orderSingle(${Number(p.id)})">Order on WhatsApp</button>
+          <button class="add" onclick="addToCart(${Number(p.id)})">＋ Add to Cart</button>
         </div>
       </div>
     </article>`).join(""):`<div class="empty">No products found. Try another search.</div>`;
 }
-/* Each product button sends that product's own name, ID and price */
+function openProduct(id){
+  const p=products.find(item=>String(item.id)===String(id));if(!p)return;
+  detailProductId=p.id;
+  const imgs=productImages(p);
+  document.getElementById("detailContent").innerHTML=`
+    <div class="detail-layout">
+      <div><img id="detailMainImage" class="detail-main" src="${safeText(imgs[0]||"")}" alt="${safeText(p.name)}">
+      <div class="detail-thumbs">${imgs.map((u,i)=>`<img class="${i===0?"selected":""}" src="${safeText(u)}" alt="Product image ${i+1}" onclick="selectDetailImage(this,'${safeText(u).replace(/'/g,"&#39;")}')">`).join("")}</div></div>
+      <div><span class="tag">${safeText(p.tag||"Featured")}</span><h2>${safeText(p.name)}</h2>
+      <div class="price">${money(p.price)} ${p.old?`<span class="oldprice">${money(p.old)}</span>`:""}</div>
+      <p class="muted">Category: ${safeText(p.category||"General")}</p>
+      <p style="line-height:1.7;white-space:pre-wrap">${safeText(p.description||p.note||"Product details available on request.")}</p>
+      <div class="field"><label>Quantity</label><input id="detailQty" type="number" min="1" max="99" value="1"></div>
+      <div class="detail-actions"><button class="add" onclick="addDetailToCart()">Add to Cart</button><button class="wa" onclick="orderSingle(${Number(p.id)})">Order on WhatsApp</button></div>
+      </div>
+    </div>`;
+  document.getElementById("detailModal").classList.add("show");
+}
+function selectDetailImage(el,url){document.getElementById("detailMainImage").src=url;document.querySelectorAll(".detail-thumbs img").forEach(i=>i.classList.remove("selected"));el.classList.add("selected");}
+function addDetailToCart(){
+  const p=products.find(item=>String(item.id)===String(detailProductId));if(!p)return;
+  const qty=Math.max(1,Math.min(99,parseInt(document.getElementById("detailQty").value,10)||1));
+  cart[p.id]=(cart[p.id]||0)+qty;updateCart();closeModal("detailModal");alert("Cart-ലേക്ക് ചേർത്തു.");
+}
 function orderSingle(id){
-  const p=products.find(item=>item.id===id);
-  if(!p)return;
-  const msg=`Hello ${SHOP.shopName}!\n\nI would like to order this product:\nProduct: ${p.name}\nProduct ID: ${p.id}\nPrice: ${money(p.price)}\nQuantity: 1\n\nPlease confirm availability and delivery charges.`;
-  openWhatsApp(msg);
+  const p=products.find(item=>String(item.id)===String(id));if(!p)return;
+  cart={};cart[p.id]=Math.max(1,Math.min(99,parseInt(document.getElementById("detailQty")?.value||"1",10)||1));
+  updateCart();closeModal("detailModal");document.getElementById("checkoutModal").classList.add("show");
 }
 function openWhatsApp(message){
   const url="https://wa.me/"+SHOP.whatsapp+"?text="+encodeURIComponent(message);
@@ -204,6 +312,95 @@ function goCheckout(){
   closeModal("cartModal");document.getElementById("checkoutModal").classList.add("show");
 }
 function orderLines(){return products.filter(p=>cart[p.id]).map(p=>`${p.name} (ID ${p.id}) x ${cart[p.id]} = ${money(p.price*cart[p.id])}`).join("\n");}
+
+function openAdmin(){document.getElementById("adminModal").classList.add("show");if(auth&&auth.currentUser&&auth.currentUser.uid===ADMIN_UID)showAdminWorkspace();else showAdminLogin();}
+function showAdminLogin(){document.getElementById("adminLogin").style.display="block";document.getElementById("adminWorkspace").style.display="none";}
+function showAdminWorkspace(){document.getElementById("adminLogin").style.display="none";document.getElementById("adminWorkspace").style.display="block";renderAdminList();}
+async function adminLogin(){
+  const msg=document.getElementById("adminLoginMessage");
+  if(!cloudReady){msg.textContent="Firebase config ചേർത്തിട്ടില്ല. ആദ്യം ഫയലിലെ FIREBASE_CONFIG പൂർത്തിയാക്കണം.";return;}
+  try{
+    const cred=await auth.signInWithEmailAndPassword(document.getElementById("adminEmail").value.trim(),document.getElementById("adminPassword").value);
+    if(cred.user.uid!==ADMIN_UID){await auth.signOut();msg.textContent="ഈ അക്കൗണ്ടിന് അഡ്മിൻ അനുമതിയില്ല.";return;}
+    msg.textContent="";showAdminWorkspace();
+  }catch(e){msg.textContent="Login പരാജയപ്പെട്ടു: "+e.message;}
+}
+async function adminLogout(){if(auth)await auth.signOut();showAdminLogin();document.getElementById("adminModal").classList.remove("show");}
+function resetProductForm(){
+  editingProductId=null;
+  ["apName","apCategory","apPrice","apOld","apTag","apNote","apDescription","apImages","apImageFiles"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("saveProductBtn").textContent="Save Product";
+}
+async function uploadCloudinaryFiles(files){
+  const urls=[];
+  for(const file of files){
+    const fd=new FormData();fd.append("file",file);fd.append("upload_preset",CLOUDINARY_UNSIGNED_PRESET);
+    const res=await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(CLOUDINARY_CLOUD_NAME)}/image/upload`,{method:"POST",body:fd});
+    const data=await res.json();if(!res.ok)throw new Error(data.error?.message||"Image upload failed");urls.push(data.secure_url);
+  }
+  return urls;
+}
+async function saveProduct(){
+  if(!auth?.currentUser||auth.currentUser.uid!==ADMIN_UID){alert("ആദ്യം അഡ്മിൻ ആയി login ചെയ്യുക.");return;}
+  if(!db){alert("Firebase config ചേർത്തിട്ടില്ല.");return;}
+  const name=document.getElementById("apName").value.trim(),category=document.getElementById("apCategory").value.trim();
+  const price=Number(document.getElementById("apPrice").value),old=Number(document.getElementById("apOld").value)||0;
+  if(!name||!category||!Number.isFinite(price)||price<0){alert("Product name, category, price എന്നിവ നൽകണം.");return;}
+  const btn=document.getElementById("saveProductBtn");btn.disabled=true;btn.textContent="Saving...";
+  try{
+    let imgs=document.getElementById("apImages").value.split(/\n/).map(s=>s.trim()).filter(s=>/^https?:\/\//i.test(s));
+    const files=Array.from(document.getElementById("apImageFiles").files||[]);
+    if(files.length){
+      if(CLOUDINARY_CLOUD_NAME.startsWith("PASTE_")||CLOUDINARY_UNSIGNED_PRESET.startsWith("PASTE_"))throw new Error("Cloudinary cloud name, unsigned preset എന്നിവ സജ്ജമാക്കിയിട്ടില്ല. അല്ലെങ്കിൽ ചിത്രങ്ങളുടെ URL നൽകുക.");
+      imgs=imgs.concat(await uploadCloudinaryFiles(files));
+    }
+    if(imgs.length>5)imgs=imgs.slice(0,5);
+    const id=editingProductId||String(Date.now());
+    const data={id,name,category,price,old,tag:document.getElementById("apTag").value.trim()||"Featured",note:document.getElementById("apNote").value.trim(),description:document.getElementById("apDescription").value.trim(),images:imgs,image:imgs[0]||"",updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    await db.collection("products").doc(String(id)).set(data,{merge:true});
+    await loadCloudProducts();resetProductForm();renderAdminList();alert("Product save ചെയ്തു.");
+  }catch(e){alert("Save ചെയ്യാൻ കഴിഞ്ഞില്ല: "+e.message);}
+  finally{btn.disabled=false;btn.textContent=editingProductId?"Update Product":"Save Product";}
+}
+function renderAdminList(){
+  const list=document.getElementById("adminProductList");
+  document.getElementById("adminProductCount").textContent=products.length;
+  list.innerHTML=products.map(p=>`<div class="admin-list-row"><img src="${safeText(productImages(p)[0]||"")}" alt=""><div><strong>${safeText(p.name)}</strong><br><span class="muted">${money(p.price)} · ${safeText(p.category)}</span></div><div><button class="backbtn" onclick="editProduct('${String(p.id).replace(/'/g,"")}')">Edit</button><button class="remove" onclick="deleteProduct('${String(p.id).replace(/'/g,"")}')">Delete</button></div></div>`).join("");
+}
+function editProduct(id){
+  const p=products.find(x=>String(x.id)===String(id));if(!p)return;
+  editingProductId=String(p.id);
+  document.getElementById("apName").value=p.name||"";document.getElementById("apCategory").value=p.category||"";
+  document.getElementById("apPrice").value=p.price??"";document.getElementById("apOld").value=p.old||"";
+  document.getElementById("apTag").value=p.tag||"";document.getElementById("apNote").value=p.note||"";
+  document.getElementById("apDescription").value=p.description||"";
+  document.getElementById("apImages").value=productImages(p).join("\n");
+  document.getElementById("saveProductBtn").textContent="Update Product";
+  document.getElementById("adminWorkspace").scrollIntoView({behavior:"smooth"});
+}
+async function deleteProduct(id){
+  if(!auth?.currentUser||auth.currentUser.uid!==ADMIN_UID||!db)return;
+  if(!confirm("ഈ product delete ചെയ്യണോ?"))return;
+  try{await db.collection("products").doc(String(id)).delete();await loadCloudProducts();renderAdminList();}
+  catch(e){alert("Delete ചെയ്യാൻ കഴിഞ്ഞില്ല: "+e.message);}
+}
+async function loadCloudProducts(){
+  if(!db)return;
+  try{
+    const snap=await db.collection("products").get();
+    if(!snap.empty){
+      const remote=snap.docs.map(doc=>{const d=doc.data();return {...d,id:d.id??doc.id,image:d.image||(d.images||[])[0]||""};});
+      products.splice(0,products.length,...remote);
+      if(!products.length)activeCategory="All";
+      renderCategories();renderProducts();updateCart();
+    }
+  }catch(e){console.warn("Products cloud load failed:",e.message);}
+}
+if(cloudReady){
+  loadCloudProducts();
+  auth.onAuthStateChanged(user=>{if(user&&user.uid===ADMIN_UID&&document.getElementById("adminModal").classList.contains("show"))showAdminWorkspace();});
+}
+
 document.getElementById("checkoutForm").addEventListener("submit",function(e){
   e.preventDefault();
   if(!Object.keys(cart).length){alert("Your cart is empty.");return;}
